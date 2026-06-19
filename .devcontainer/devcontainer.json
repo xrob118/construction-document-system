@@ -1,0 +1,36 @@
+{
+  "name": "Construction Document System",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11-bullseye",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    }
+  },
+  "forwardPorts": [8080],
+  "portsAttributes": {
+    "8080": {
+      "label": "应用端口 (Frontend + Backend)",
+      "onAutoForward": "openBrowser"
+    }
+  },
+  "postCreateCommand": "cd backend && pip install -r requirements.txt && python seed.py",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "Vue.volar"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python"
+      }
+    }
+  },
+  "runServices": ["backend"],
+  "service": "backend",
+  "services": {
+    "backend": {
+      "command": "cd backend && python run.py"
+    }
+  }
+}

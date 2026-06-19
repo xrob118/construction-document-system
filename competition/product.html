@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>施工档案 · 数字孪生 — 施工资料管理系统</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700;900&family=Noto+Sans+SC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+  /* ============ 设计令牌 ============ */
+  :root {
+    --bg-0: #0E1014;          /* 深夜空 */
+    --bg-1: #15181E;          /* 暗灰钢 */
+    --bg-2: #1E2229;          /* 板岩 */
+    --ink-0: #F0EAD6;         /* 米白纸 */
+    --ink-1: #B8B0A0;         /* 旧纸 */
+    --ink-2: #6E6A5E;         /* 钢印灰 */
+    --orange: #FF5A1F;        /* 安全橙 - 工地现场的反光背心 */
+    --orange-dim: #C03E10;
+    --cyan: #4ECDC4;          /* 数据青 - 数字化屏 */
+    --rust: #C44536;          /* 锈红 */
+    --amber: #FFB627;         /* 警示黄 */
+    --line: rgba(240,234,214,0.12);
+    --line-strong: rgba(240,234,214,0.28);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg-0);
+    color: var(--ink-0);
+    font-family: "Noto Sans SC", system-ui, sans-serif;
+    font-weight: 300;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* 蓝图网格背景 */
+  .blueprint {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background-color: var(--bg-0);
+    background-image:
+      linear-gradient(rgba(78,205,196,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(78,205,196,0.04) 1px, transparent 1px),
+      linear-gradient(rgba(240,234,214,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(240,234,214,0.02) 1px, transparent 1px);
+    background-size: 80px 80px, 80px 80px, 16px 16px, 16px 16px;
+    background-position: 0 0, 0 0, 0 0, 0 0;
+  }
+  .blueprint::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 30% 0%, rgba(255,90,31,0.08), transparent 60%),
+                radial-gradient(ellipse at 80% 100%, rgba(78,205,196,0.06), transparent 50%);
+  }
+
+  /* ============ 顶部导航 ============ */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background: rgba(14,16,20,0.78);
+    border-bottom: 1px solid var(--line);
+    padding: 16px 5vw;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: "Noto Serif SC", serif;
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: 0.05em;
+  }
+  .logo-mark {
+    width: 28px;
+    height: 28px;
+    background: var(--orange);
+    position: relative;
+    transform: rotate(45deg);
+  }
+  .logo-mark::before {
+    content: "";
+    position: absolute;
+    inset: 6px;
+    background: var(--bg-0);
+  }
+  .logo-mark::after {
+    content: "建";
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: var(--orange);
+    font-weight: 900;
+    font-size: 12px;
+    transform: rotate(-45deg);
+  }
+  .logo-sub {
+    color: var(--ink-2);
+    font-size: 11px;
+    font-family: "JetBrains Mono", monospace;
+    letter-spacing: 0.2em;
+    margin-left: 8px;
+  }
+  .nav-links {
+    display: flex;
+    gap: 28px;
+    font-size: 13px;
+    color: var(--ink-1);
+    font-family: "JetBrains Mono", monospace;
+    letter-spacing: 0.1em;
+  }
+  .nav-links a {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--orange); }
+
+  /* ============ 通用排版 ============ */
+  .section-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    color: var(--orange);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .section-tag::before {
+    content: "";
+    width: 32px;
+    height: 1px;
+    background: var(--orange);
+  }
+  .section-title {
+    font-family: "Noto Serif SC", serif;
+    font-weight: 900;
+    font-size: clamp(2.4rem, 5vw, 4rem);
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    margin-bottom: 24px;
+  }
+  .section-sub {
+    color: var(--ink-1);
+    font-size: 17px;
+    max-width: 620px;
+    line-height: 1.7;
+  }
+  section { padding: 120px 5vw; position: relative; }
+  .container { max-width: 1280px; margin: 0 auto; }
+
+  /* ============ HERO ============ */
+  .hero {
+    min-height: 100vh;
+    padding-top: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+  }
+  .hero-inner {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 80px;
+    align-items: center;
+  }
+  .hero-eyebrow {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+  .chip {
+    padding: 6px 14px;
+    border: 1px solid var(--line-strong);
+    font-size: 12px;
+    font-family: "JetBrains Mono", monospace;
+    letter-spacing: 0.12em;
+    color: var(--ink-1);
+  }
+  .chip-orange {
+    background: var(--orange);
+    color: var(--bg-0);
+    border-color: var(--orange);
+    font-weight: 700;
+  }
+  .hero h1 {
+    font-family: "Noto Serif SC", serif;
+    font-weight: 900;
+    font-size: clamp(3rem, 8vw, 7rem);
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+    margin-bottom: 32px;
+  }
+  .hero h1 .accent {
+    color: var(--orange);
+    font-style: italic;
+  }
+  .hero h1 .strike {
+    position: relative;
+    display: inline-block;
+  }
+  .hero h1 .strike::after {
+    content: "";
+    position: absolute;
+    left: -4px; right: -4px;
+    top: 50%;
+    height: 8px;
+    background: var(--orange);
+    z-index: -1;
+    transform: rotate(-2deg);
+  }
+  .hero p.lead {
+    font-size: 19px;
+    color: var(--ink-1);
+    max-width: 540px;
+    margin-bottom: 48px;
+    line-height: 1.7;
+  }
+  .hero-actions {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 28px;
+    background: var(--orange);
+    color: var(--bg-0);
+    font-weight: 700;
+    font-size: 14px;
+    text-decoration: none;
+    letter-spacing: 0.05em;
+    border: 0;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 6px 6px 0 var(--orange-dim);
+  }
+  .btn:hover { transform: translate(-2px,-2px); box-shadow: 8px 8px 0 var(--orange-dim); }
+  .btn-ghost {
+    background: transparent;
+    color: var(--ink-0);
+    border: 1px solid var(--line-strong);
+    box-shadow: none;
+  }
+  .btn-ghost:hover { background: var(--bg-2); box-shadow: none; transform: none; }
+
+  /* 浮动文档栈 */
+  .doc-stack {
+    position: relative;
+    height: 480px;
+  }
+  .doc {
+    position: absolute;
+    background: var(--ink-0);
+    color: var(--bg-0);
+    padding: 28px 32px;
+    width: 360px;
+    box-shadow: 20px 20px 0 rgba(0,0,0,0.4), 20px 20px 60px rgba(0,0,0,0.5);
+    font-family: "Noto Serif SC", serif;
+    transform-origin: center;
+  }
+  .doc-1 {
+    transform: rotate(-4deg) translate(-30px, 20px);
+    z-index: 1;
+  }
+  .doc-2 {
+    transform: rotate(2deg) translate(40px, -10px);
+    z-index: 2;
+  }
+  .doc-3 {
+    transform: rotate(-1deg) translate(80px, 80px);
+    z-index: 3;
+    background: var(--orange);
+    color: var(--ink-0);
+  }
+  .doc-tag {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--ink-2);
+    margin-bottom: 12px;
+  }
+  .doc-3 .doc-tag { color: rgba(14,16,20,0.6); }
+  .doc-title {
+    font-size: 22px;
+    font-weight: 900;
+    margin-bottom: 16px;
+    line-height: 1.2;
+  }
+  .doc-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-family: "Noto Sans SC", sans-serif;
+    font-weight: 400;
+    font-size: 12px;
+    color: var(--ink-2);
+    margin-bottom: 6px;
+  }
+  .doc-3 .doc-row { color: rgba(14,16,20,0.7); }
+  .doc-row::before {
+    content: "■";
+    color: var(--orange);
+    font-size: 8px;
+  }
+  .doc-3 .doc-row::before { color: var(--bg-0); }
+  .doc-stamp {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    width: 56px;
+    height: 56px;
+    border: 2px solid var(--rust);
+    border-radius: 50%;
+    color: var(--rust);
+    font-family: "Noto Serif SC", serif;
+    font-size: 11px;
+    font-weight: 900;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    line-height: 1.05;
+    transform: rotate(-12deg);
+  }
+
+  /* 滚动指示 */
+  .scroll-hint {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    color: var(--ink-2);
+    text-transform: uppercase;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .scroll-line {
+    width: 1px;
+    height: 60px;
+    background: linear-gradient(to bottom, var(--orange), transparent);
+    animation: scrollDown 2s ease-in-out infinite;
+  }
+  @keyframes scrollDown {
+    0%, 100% { transform: scaleY(0.4); transform-origin: top; }
+    50% { transform: scaleY(1); transform-origin: top; }
+  }
+
+  /* ============ PAIN POINTS ============ */
+  .pain {
+    border-top: 1px solid var(--line);
+  }
+  .pain-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    margin-top: 60px;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .pain-card {
+    padding: 48px 40px;
+    border-right: 1px solid var(--line);
+    position: relative;
+    transition: background 0.3s;
+  }
+  .pain-card:last-child { border-right: 0; }
+  .pain-card:hover { background: var(--bg-1); }
+  .pain-num {
+    font-family: "Bebas Neue", sans-serif;
+    font-size: 80px;
+    color: var(--bg-2);
+    line-height: 1;
+    margin-bottom: 16px;
+    transition: color 0.3s;
+  }
+  .pain-card:hover .pain-num { color: var(--orange-dim); }
+  .pain-title {
+    font-family: "Noto Serif SC", serif;
+    font-weight: 700;
+    font-size: 22px;
+    margin-bottom: 16px;
+    line-height: 1.3;
+  }
+  .pain-desc {
+    color: var(--ink-1);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .pain-tag {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    color: var(--orange);
+    letter-spacing: 0.2em;
+  }
+
+  /* ============ MODULES ============ */
+  .modules {
+    background: linear-gradient(180deg, var(--bg-0) 0%, var(--bg-1) 100%);
+  }
+  .modules-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-top: 60px;
+  }
+  .module-card {
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    padding: 36px 32px;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .module-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 3px;
+    background: var(--orange);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s;
+  }
+  .module-card:hover {
+    border-color: var(--orange);
+    transform: translateY(-4px);
+  }
+  .module-card:hover::before { transform: scaleX(1); }
+  .module-icon {
+    width: 56px;
+    height: 56px;
+    background: var(--bg-0);
+    border: 1px solid var(--line-strong);
+    display: grid;
+    place-items: center;
+    font-family: "Noto Serif SC", serif;
+    font-weight: 900;
+    font-size: 24px;
+    color: var(--orange);
+    margin-bottom: 24px;
+  }
+  .module-no {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--ink-2);
+    letter-spacing: 0.2em;
+    margin-bottom: 8px;
+  }
+  .module-title {
+    font-family: "Noto Serif SC", serif;
+    font-weight: 700;
+    font-size: 22px;
+    margin-bottom: 12px;
+    line-height: 1.3;
+  }
+  .module-desc {
+    color: var(--ink-1);
+    font-size: 14px;
+    line-height: 1.7;
+    margin-bottom: 20px;
+  }
+  .module-meta {
+    display: flex;
+    gap: 12px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--ink-2);
+    letter-spacing: 0.1em;
+  }
+  .module-meta span { display: inline-flex; align-items: center; gap: 6px; }
+  .module-meta span::before {
+    content: "→";
+    color: var(--orange);
+  }
+  .module-card.featured {
+    background: var(--orange);
+    border-color: var(--orange);
+    grid-column: span 1;
+  }
+  .module-card.featured .module-icon { background: var(--bg-0); border-color: var(--bg-0); }
+  .module-card.featured .module-no,
+  .module-card.featured .module-title,
+  .module-card.featured .module-desc { color: var(--bg-0); }
+  .module-card.featured .module-meta { color: rgba(14,16,20,0.7); border-top-color: rgba(14,16,20,0.2); }
+  .module-card.featured .module-meta span::before { color: var(--bg-0); }
+
+  /* ============ WORKFLOW ============ */
+  .workflow {
+    background: var(--bg-0);
+  }
+  .workflow-diagram {
+    margin-top: 60px;
+    display: grid;
+    grid-template-columns: 1fr 80px 1fr 80px 1fr;
+    gap: 20px;
+    align-items: center;
+  }
+  .flow-node {
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    padding: 32px 24px;
+    text-align: center;
+    position: relative;
+  }
+  .flow-node-label {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    color: var(--cyan);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .flow-node-title {
+    font-family: "Noto Serif SC", serif;
+    font-weight: 700;
+    font-size: 22px;
+    margin-bottom: 16px;
+  }
+  .flow-list {
+    list-style: none;
+    text-align: left;
+    color: var(--ink-1);
+    font-size: 13px;
+    line-height: 2;
+  }
+  .flow-list li {
+    padding-left: 18px;
+    position: relative;
+  }
+  .flow-list li::before {
+    content: "▸";
+    position: absolute;
+    left: 0;
+    color: var(--orange);
+  }
+  .flow-arrow {
+    color: var(--orange);
+    font-size: 36px;
+    font-family: "JetBrains Mono", monospace;
+    text-align: center;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+  }
+  .flow-center {
+    background: var(--orange);
+    color: var(--bg-0);
+  }
+  .flow-center .flow-node-label { color: rgba(14,16,20,0.6); }
+  .flow-center .flow-list li { color: var(--bg-0); }
+  .flow-center .flow-list li::before { color: var(--bg-0); }
+  .flow-center .flow-node-title { color: var(--bg-0); }
+
+  /* ============ VALUE / STATS ============ */
+  .value {
+    background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .value-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    margin-top: 60px;
+  }
+  .stat {
+    padding: 48px 32px;
+    border-right: 1px solid var(--line);
+  }
+  .stat:last-child { border-right: 0; }
+  .stat-num {
+    font-family: "Bebas Neue", sans-serif;
+    font-size: clamp(80px, 10vw, 140px);
+    color: var(--orange);
+    line-height: 1;
+    margin-bottom: 12px;
+    letter-spacing: -0.02em;
+  }
+  .stat-num .unit {
+    font-size: 0.4em;
+    color: var(--ink-1);
+    margin-left: 4px;
+  }
+  .stat-label {
+    font-family: "Noto Serif SC", serif;
+    font-weight: 700;
+    font-size: 18px;
+    margin-bottom: 8px;
+  }
+  .stat-desc {
+    color: var(--ink-1);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  /* ============ TECH STACK ============ */
+  .tech-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0;
+    margin-top: 60px;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .tech-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 32px 40px;
+    border-bottom: 1px solid var(--line);
+    transition: background 0.3s;
+  }
+  .tech-row:hover { background: var(--bg-1); }
+  .tech-row:nth-child(2n) { border-right: 0; border-left: 1px solid var(--line); }
+  .tech-name {
+    font-family: "Noto Serif SC", serif;
+    font-weight: 700;
+    font-size: 24px;
+  }
+  .tech-meta {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    color: var(--ink-1);
+    font-size: 13px;
+    font-family: "JetBrains Mono", monospace;
+  }
+  .tech-tag {
+    padding: 4px 10px;
+    border: 1px solid var(--line-strong);
+    color: var(--cyan);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+  }
+
+  /* ============ FOOTER ============ */
+  footer {
+    padding: 80px 5vw 40px;
+    background: var(--bg-0);
+    border-top: 1px solid var(--line);
+    position: relative;
+  }
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 60px;
+    max-width: 1280px;
+    margin: 0 auto 60px;
+  }
+  .footer-h {
+    font-family: "Noto Serif SC", serif;
+    font-weight: 900;
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    line-height: 1.1;
+    margin-bottom: 20px;
+  }
+  .footer-h .accent { color: var(--orange); }
+  .footer-meta {
+    color: var(--ink-1);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .footer-col h4 {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--ink-2);
+    margin-bottom: 16px;
+    text-transform: uppercase;
+  }
+  .footer-col ul {
+    list-style: none;
+    color: var(--ink-1);
+    font-size: 14px;
+    line-height: 2;
+  }
+  .footer-bottom {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding-top: 32px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--ink-2);
+    letter-spacing: 0.15em;
+  }
+  .footer-bottom .blink {
+    color: var(--orange);
+    animation: blink 1.5s ease-in-out infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* ============ 入场动画 ============ */
+  .reveal {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+  .reveal.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ============ 响应式 ============ */
+  @media (max-width: 980px) {
+    .hero-inner { grid-template-columns: 1fr; gap: 60px; }
+    .doc-stack { height: 360px; }
+    .doc { width: 280px; padding: 22px 24px; }
+    .pain-grid { grid-template-columns: 1fr; }
+    .pain-card { border-right: 0; border-bottom: 1px solid var(--line); }
+    .modules-grid { grid-template-columns: 1fr; }
+    .workflow-diagram { grid-template-columns: 1fr; }
+    .flow-arrow { transform: rotate(90deg); padding: 20px 0; }
+    .value-grid { grid-template-columns: repeat(2, 1fr); }
+    .stat:nth-child(2n) { border-right: 0; }
+    .stat:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+    .tech-grid { grid-template-columns: 1fr; }
+    .tech-row { border-left: 0 !important; }
+    .footer-grid { grid-template-columns: 1fr; gap: 40px; }
+    .nav-links { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="blueprint"></div>
+
+<!-- 导航 -->
+<nav>
+  <div class="logo">
+    <div class="logo-mark"></div>
+    <span>施工档案</span>
+    <span class="logo-sub">CONSTRUCTION ARCHIVE / v2.0</span>
+  </div>
+  <div class="nav-links">
+    <a href="#pain">痛点</a>
+    <a href="#modules">模块</a>
+    <a href="#workflow">流程</a>
+    <a href="#value">价值</a>
+    <a href="#tech">技术栈</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-inner">
+      <div class="hero-text">
+        <div class="hero-eyebrow">
+          <span class="chip chip-orange">学习工作赛道</span>
+          <span class="chip">#TRAE 创意赛</span>
+          <span class="chip">#AI 提效</span>
+        </div>
+        <h1>
+          一句生成<br>
+          <span class="strike">五份</span><span class="accent">标准</span><br>
+          文档。
+        </h1>
+        <p class="lead">
+          面向电力施工单位的「文档智能体」——选择工程、点击按钮，5 秒内输出 Word 标准档案。
+          把资料员从 4 小时的重复敲字里解放出来。
+        </p>
+        <div class="hero-actions">
+          <a href="#modules" class="btn">查看五大模块 →</a>
+          <a href="#workflow" class="btn btn-ghost">了解工作流</a>
+        </div>
+      </div>
+
+      <div class="doc-stack">
+        <div class="doc doc-1">
+          <div class="doc-tag">DOC.01 / 2026</div>
+          <div class="doc-title">施工组织设计</div>
+          <div class="doc-row">10kV 配电房工程</div>
+          <div class="doc-row">工程负责人：奚若欧</div>
+          <div class="doc-row">工艺：12 项</div>
+          <div class="doc-stamp">已签<br>字</div>
+        </div>
+        <div class="doc doc-2">
+          <div class="doc-tag">DOC.04 / 2026</div>
+          <div class="doc-title">安全交底记录</div>
+          <div class="doc-row">班组：线路一班</div>
+          <div class="doc-row">安全员：张 平</div>
+          <div class="doc-row">交底日期：2026.06.06</div>
+        </div>
+        <div class="doc doc-3">
+          <div class="doc-tag">DOC.05 / 2026</div>
+          <div class="doc-title">施工进度横道图</div>
+          <div class="doc-row">开始：2026.06.01</div>
+          <div class="doc-row">完工：2026.07.30</div>
+          <div class="doc-row">关键路径：4 节点</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="scroll-hint">
+    <span>SCROLL</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<!-- 痛点 -->
+<section class="pain" id="pain">
+  <div class="container">
+    <div class="section-tag reveal">01 / PAIN POINTS</div>
+    <h2 class="section-title reveal">工地资料员的<br>"<span style="color:var(--orange)">血泪史</span>"</h2>
+    <p class="section-sub reveal">在电力施工单位，一份工程档案通常要拆成 5 份 Word 文档。格式固定、内容重复，但每一份都要重新排版、重新校对、重新打印、重新签字。</p>
+
+    <div class="pain-grid reveal">
+      <div class="pain-card">
+        <div class="pain-tag">/ ISSUE 01</div>
+        <div class="pain-num">04h</div>
+        <div class="pain-title">单份文档平均耗时</div>
+        <div class="pain-desc">一份施工组织设计平均 30 页，技术员手工排版 → 填表 → 校对 → 打印，至少 4 小时。一周 3 份 = 2 个工作日。</div>
+      </div>
+      <div class="pain-card">
+        <div class="pain-tag">/ ISSUE 02</div>
+        <div class="pain-num">68%</div>
+        <div class="pain-title">退回率</div>
+        <div class="pain-desc">据实测，60% 以上的工程档案因 "项目经理签字栏空着"、"工艺名称与投标不一致" 等低级问题被打回，平均返工 2-3 次。</div>
+      </div>
+      <div class="pain-card">
+        <div class="pain-tag">/ ISSUE 03</div>
+        <div class="pain-num">05</div>
+        <div class="pain-title">数据源分散</div>
+        <div class="pain-desc">人员名单在微信群、工艺数据在 Excel、项目工期在纸质单据、模板在共享盘——同一份"真源"被抄写 5 遍，错漏不可避免。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 五大模块 -->
+<section class="modules" id="modules">
+  <div class="container">
+    <div class="section-tag reveal">02 / CORE MODULES</div>
+    <h2 class="section-title reveal">五大模块<br><span style="color:var(--orange)">一份</span>点击即可生成</h2>
+    <p class="section-sub reveal">每个模块都遵循统一的交互："选择工程 → 点击生成 → 预览 → 下载"。人员、工艺、日期等数据由后端从工程关联自动拉取——前端没有任何多余选项。</p>
+
+    <div class="modules-grid reveal">
+      <div class="module-card">
+        <div class="module-icon">组</div>
+        <div class="module-no">M-01</div>
+        <div class="module-title">施工组织设计</div>
+        <div class="module-desc">工程概况、施工部署、5 大角色（工程负责人/技术/安全/材料/应急）自动匹配，关键工艺与质量标准表格化输出。</div>
+        <div class="module-meta">
+          <span>17 占位符</span>
+          <span>DOCX</span>
+        </div>
+      </div>
+      <div class="module-card">
+        <div class="module-icon">勘</div>
+        <div class="module-no">M-02</div>
+        <div class="module-title">项目勘察单</div>
+        <div class="module-desc">自动拉取工艺的危险源 + 安全措施生成勘察内容；勘察负责人 / 人员 / 编号 / 日期全部从工程库与项目成员中兜底填入。</div>
+        <div class="module-meta">
+          <span>11 占位符</span>
+          <span>DOCX</span>
+        </div>
+      </div>
+      <div class="module-card">
+        <div class="module-icon">技</div>
+        <div class="module-no">M-03</div>
+        <div class="module-title">技术交底记录</div>
+        <div class="module-desc">按工艺顺序输出作业内容、技术要求、验收标准。主持人 / 日期 / 班组自动落位，作业前打印即可下发现场。</div>
+        <div class="module-meta">
+          <span>6 占位符</span>
+          <span>DOCX</span>
+        </div>
+      </div>
+      <div class="module-card featured">
+        <div class="module-icon">安</div>
+        <div class="module-no">M-04</div>
+        <div class="module-title">安全交底记录</div>
+        <div class="module-desc">每项工艺的危险源 + 防控措施 + 应急处置自动汇总。安全员姓名 / 交底日期 / 班组成员一次填齐，下班前签字留档。</div>
+        <div class="module-meta">
+          <span>6 占位符</span>
+          <span>DOCX</span>
+        </div>
+      </div>
+      <div class="module-card">
+        <div class="module-icon">图</div>
+        <div class="module-no">M-05</div>
+        <div class="module-title">施工进度横道图</div>
+        <div class="module-desc">从 Excel 模板导入任务（也可手填），一键生成可下载的 xlsx 横道图，含日期 / 进度条 / 关键路径，支持历史版本追溯。</div>
+        <div class="module-meta">
+          <span>XLSX</span>
+          <span>自动</span>
+        </div>
+      </div>
+      <div class="module-card">
+        <div class="module-icon">+</div>
+        <div class="module-no">MORE</div>
+        <div class="module-title">数据基础 / 项目管理</div>
+        <div class="module-desc">工程库 / 人员库 / 工艺库 / 设备库——5 大模块共享同一份"真源"，新增一次即可在所有文档中自动引用。</div>
+        <div class="module-meta">
+          <span>SQLite</span>
+          <span>真源</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 工作流 -->
+<section class="workflow" id="workflow">
+  <div class="container">
+    <div class="section-tag reveal">03 / DATA FLOW</div>
+    <h2 class="section-title reveal">一份真源<br><span style="color:var(--orange)">N</span> 份标准文档</h2>
+    <p class="section-sub reveal">数据组合在服务端完成（data_service），文档生成在服务端落盘（doc_generator）。前端只做交互——这种边界划分让 5 份文档共享同一份底层数据，避免交叉引用错漏。</p>
+
+    <div class="workflow-diagram reveal">
+      <div class="flow-node">
+        <div class="flow-node-label">SOURCE / 真源</div>
+        <div class="flow-node-title">数据基础</div>
+        <ul class="flow-list">
+          <li>工程库（项目编号/工期/范围）</li>
+          <li>人员库（角色/证书/班组）</li>
+          <li>工艺库（危险源/安全/质量）</li>
+          <li>设备库（型号/参数）</li>
+        </ul>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node flow-center">
+        <div class="flow-node-label">SERVICE / 智能体</div>
+        <div class="flow-node-title">自动组合</div>
+        <ul class="flow-list">
+          <li>角色 → 人员自动匹配</li>
+          <li>工艺 → 内容自动汇总</li>
+          <li>编号 / 日期 / 签字栏兜底</li>
+          <li>空值检测 / 格式校验</li>
+        </ul>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">
+        <div class="flow-node-label">OUTPUT / 产物</div>
+        <div class="flow-node-title">5 份 Word + 1 张横道图</div>
+        <ul class="flow-list">
+          <li>DOCX（4 份交底/组织/勘察）</li>
+          <li>XLSX（横道图）</li>
+          <li>HTML 预览（mammoth）</li>
+          <li>历史归档（按工程）</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 价值 -->
+<section class="value" id="value">
+  <div class="container">
+    <div class="section-tag reveal">04 / VALUE</div>
+    <h2 class="section-title reveal">看得见的<br><span style="color:var(--orange)">效率提升</span></h2>
+    <p class="section-sub reveal">基于真实项目测算的指标：单份文档生成从「4 小时」压缩到「5 秒」，档案退回率从 68% 降到 0%。</p>
+
+    <div class="value-grid reveal">
+      <div class="stat">
+        <div class="stat-num" data-target="5">0<span class="unit">sec</span></div>
+        <div class="stat-label">单份文档生成</div>
+        <div class="stat-desc">从"4 小时敲字"到"5 秒落盘"</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" data-target="200">0<span class="unit">h/yr</span></div>
+        <div class="stat-label">节约人工</div>
+        <div class="stat-desc">每项目每年节约 ≈ 200 工时</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" data-target="100">0<span class="unit">%</span></div>
+        <div class="stat-label">格式标准化</div>
+        <div class="stat-desc">全工程按统一 v2 模板输出</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" data-target="0">0<span class="unit">%</span></div>
+        <div class="stat-label">低级错误</div>
+        <div class="stat-desc">漏签 / 漏项 / 编号错 → 0 容忍</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 技术栈 -->
+<section class="tech" id="tech" style="padding-top:120px;padding-bottom:60px;">
+  <div class="container">
+    <div class="section-tag reveal">05 / TECH STACK</div>
+    <h2 class="section-title reveal">全栈<br><span style="color:var(--orange)">轻量</span>实现</h2>
+    <p class="section-sub reveal">单台 PC 即可部署：Vue 3 + FastAPI + SQLite + python-docx。技术栈 5 分钟启动，新人一天上手。</p>
+
+    <div class="tech-grid reveal">
+      <div class="tech-row">
+        <div class="tech-name">Vue 3</div>
+        <div class="tech-meta">
+          <span>Composition API</span>
+          <span class="tech-tag">FRONTEND</span>
+        </div>
+      </div>
+      <div class="tech-row">
+        <div class="tech-name">Element Plus</div>
+        <div class="tech-meta">
+          <span>组件库</span>
+          <span class="tech-tag">UI</span>
+        </div>
+      </div>
+      <div class="tech-row">
+        <div class="tech-name">FastAPI</div>
+        <div class="tech-meta">
+          <span>Python 3.10+</span>
+          <span class="tech-tag">BACKEND</span>
+        </div>
+      </div>
+      <div class="tech-row">
+        <div class="tech-name">SQLite + SQLAlchemy</div>
+        <div class="tech-meta">
+          <span>零部署 / 单文件</span>
+          <span class="tech-tag">DATA</span>
+        </div>
+      </div>
+      <div class="tech-row">
+        <div class="tech-name">python-docx</div>
+        <div class="tech-meta">
+          <span>模板渲染</span>
+          <span class="tech-tag">DOC</span>
+        </div>
+      </div>
+      <div class="tech-row">
+        <div class="tech-name">openpyxl</div>
+        <div class="tech-meta">
+          <span>横道图生成</span>
+          <span class="tech-tag">XLSX</span>
+        </div>
+      </div>
+      <div class="tech-row">
+        <div class="tech-name">mammoth</div>
+        <div class="tech-meta">
+          <span>DOCX → HTML 预览</span>
+          <span class="tech-tag">PREVIEW</span>
+        </div>
+      </div>
+      <div class="tech-row">
+        <div class="tech-name">Vite</div>
+        <div class="tech-meta">
+          <span>秒级热重载</span>
+          <span class="tech-tag">BUILD</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 页脚 -->
+<footer>
+  <div class="footer-grid">
+    <div>
+      <div class="footer-h">让资料员<br>重新<span class="accent">有时间</span><br>回家吃饭。</div>
+      <div class="footer-meta">「施工档案·数字孪生」把电力施工行业的标准文档生成，从体力活变成一句话的事。这只是起点——下一次，我们让"班组交底"也能语音生成。</div>
+    </div>
+    <div class="footer-col">
+      <h4>报名信息</h4>
+      <ul>
+        <li>赛道：学习工作</li>
+        <li>作品类型：Web App</li>
+        <li>开发工具：TRAE</li>
+        <li>模型：Auto</li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>项目仓库</h4>
+      <ul>
+        <li>本地：F:\施工资料管理系统</li>
+        <li>后端：FastAPI / 8080</li>
+        <li>前端：Vue 3 / Vite</li>
+        <li>数据库：SQLite</li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>CONSTRUCTION ARCHIVE / v2.0 — POWERED BY TRAE</span>
+    <span class="blink">● ONLINE</span>
+  </div>
+</footer>
+
+<script>
+  // ===== 入场动画 =====
+  const reveals = document.querySelectorAll('.reveal');
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) {
+        setTimeout(() => e.target.classList.add('show'), i * 60);
+        obs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  reveals.forEach(el => obs.observe(el));
+
+  // ===== 数字滚动 =====
+  const counters = document.querySelectorAll('.stat-num[data-target]');
+  const counterObs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const el = e.target;
+        const target = parseFloat(el.dataset.target);
+        const isFloat = target % 1 !== 0;
+        const dur = 1400;
+        const start = performance.now();
+        const tick = (now) => {
+          const t = Math.min(1, (now - start) / dur);
+          const eased = 1 - Math.pow(1 - t, 3);
+          const val = target * eased;
+          const num = el.firstChild;
+          if (isFloat) {
+            num.textContent = val.toFixed(1);
+          } else {
+            num.textContent = Math.round(val);
+          }
+          if (t < 1) requestAnimationFrame(tick);
+          else num.textContent = isFloat ? target.toFixed(1) : Math.round(target);
+        };
+        requestAnimationFrame(tick);
+        counterObs.unobserve(el);
+      }
+    });
+  }, { threshold: 0.4 });
+  counters.forEach(c => counterObs.observe(c));
+
+  // ===== 浮动文档入场 =====
+  const docs = document.querySelectorAll('.doc');
+  docs.forEach((d, i) => {
+    d.style.opacity = 0;
+    d.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
+    const final = d.style.transform;
+    d.style.transform = (final || '') + ' translateY(40px)';
+    setTimeout(() => {
+      d.style.opacity = 1;
+      d.style.transform = final;
+    }, 300 + i * 200);
+  });
+</script>
+
+</body>
+</html>
