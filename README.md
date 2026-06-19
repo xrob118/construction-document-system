@@ -21,7 +21,7 @@
 
 > 最快方式：点下面的按钮，云端自动启动完整 Demo。
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/<your-username>/construction-document-system?quickstart=1)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/xrob118/construction-document-system?quickstart=1)
 
 启动后访问 **8080 端口**（Codespaces 会自动转发）即可看到完整 UI。
 
@@ -37,7 +37,7 @@
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/<your-username>/construction-document-system.git
+git clone https://github.com/xrob118/construction-document-system.git
 cd construction-document-system
 
 # 2. 安装 Python 依赖
