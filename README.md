@@ -1,67 +1,55 @@
 # 施工资料智能生成系统
 
-> 面向电力施工单位的「文档智能体」—— 选择工程、点击按钮，5 秒内输出 5 份标准 Word 档案 + 1 张进度横道图。
+> 面向电力施工单位的「文档智能体」 — 选工程，点生成，5 秒输出 5 份标准 Word + 1 张进度横道图。
 >
 > 🏆 参赛项目：[TRAE AI 创造力大赛 · 学习工作赛道](https://www.trae.cn/ai-creativity)
 
 ![Made with TRAE](https://img.shields.io/badge/Made%20with-TRAE-orange)
-![Vue 3](https://img.shields.io/badge/Vue-3-42b883)
-![FastAPI](https://img.shields.io/badge/FastAPI-009688)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 
 ---
 
 ## 🎯 一句话
 
-把资料员从「4 小时敲字」里解放出来——选工程，点生成，5 秒下载标准 Word 文档。
+把资料员从「4 小时敲字」里解放出来 — 选工程，点按钮，5 秒下载标准 Word 文档。
 
 ---
 
-## 🚀 1 分钟 Demo（GitHub Codespaces）
+## 📸 实际运行界面
 
-> 最快方式：点下面的按钮，云端自动启动完整 Demo。
+### 首页总览
+![Dashboard](demo/screenshots/01-dashboard.png)
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/xrob118/construction-document-system?quickstart=1)
+### 工程列表
+![Project List](demo/screenshots/02-project-list.png)
 
-启动后访问 **8080 端口**（Codespaces 会自动转发）即可看到完整 UI。
+### 数据底座
+![Data Foundation](demo/screenshots/03-data-foundation.png)
+
+### 5 大文档生成模块
+
+| 施工组织设计 | 项目勘察单 |
+|---|---|
+| ![Construction Design](demo/screenshots/04-construction-design.png) | ![Survey](demo/screenshots/05-survey.png) |
+
+| 技术交底 | 安全交底 |
+|---|---|
+| ![Tech Briefing](demo/screenshots/06-tech-briefing.png) | ![Safety Briefing](demo/screenshots/07-safety-briefing.png) |
+
+### 施工进度横道图
+![Gantt Chart](demo/screenshots/08-gantt-chart.png)
 
 ---
 
-## 🖥️ 本地 5 分钟启动
+## 🚀 在线体验 DEMO
 
-### 前置环境
-- Python 3.10+
-- Node.js 18+（仅首次构建需要）
+👉 **[点击查看 创意产物 HTML](competition/product.html)** — 单页 H5 作品，展示作品形态、目标用户、价值数据
 
-### 步骤
-
-```bash
-# 1. 克隆仓库
-git clone https://github.com/xrob118/construction-document-system.git
-cd construction-document-system
-
-# 2. 安装 Python 依赖
-cd backend
-pip install -r requirements.txt
-
-# 3. （可选）重置数据库为演示数据
-python seed.py
-
-# 4. 启动后端（默认端口 8080）
-python run.py
-
-# 5. 浏览器访问
-# http://127.0.0.1:8080
-```
-
-> 💡 仓库内已包含构建好的前端（`backend/static/`），无需 npm install 即可运行。
-> 如需修改前端代码：`cd frontend && npm install && npm run build`，再把 `dist/` 同步到 `backend/static/`。
+> 推荐用 Chrome / Edge 打开 `competition/product.html`，包含动画、滚动渐显等效果。
 
 ---
 
 ## ✨ 五大模块 · 一键生成
-
-每个模块都遵循统一的交互：**「选择工程 → 点击生成 → 预览 → 下载」**。人员、工艺、日期等数据由后端从工程关联自动拉取——前端没有任何多余选项。
 
 | # | 模块 | 输出 | 占位符 |
 |---|---|---|---|
@@ -71,7 +59,7 @@ python run.py
 | M-04 | 安全交底记录 | DOCX | 6 |
 | M-05 | 施工进度横道图 | XLSX | — |
 
-> 详见 [项目结构](#-项目结构) 与 [`backend/services/data_service.py`](backend/services/data_service.py)。
+每个模块都遵循统一交互：**「选择工程 → 点击生成 → 预览 → 下载」**。人员、工艺、日期等数据由后端从工程关联自动拉取 — 前端没有任何多余选项。
 
 ---
 
@@ -85,51 +73,7 @@ python run.py
 
 ---
 
-## 🏗️ 项目结构
-
-```
-construction-document-system/
-├── backend/                       # FastAPI 后端
-│   ├── main.py                    # 应用入口
-│   ├── run.py                     # 启动脚本
-│   ├── database.py                # SQLite 连接
-│   ├── models.py                  # ORM 模型
-│   ├── seed.py                    # 演示数据初始化
-│   ├── requirements.txt           # Python 依赖
-│   ├── data/
-│   │   └── construction.db        # SQLite 数据库（含演示数据）
-│   ├── routers/                   # API 路由
-│   │   ├── construction_design.py # 施工组织设计
-│   │   ├── survey.py              # 项目勘察单
-│   │   ├── tech_briefing.py       # 技术交底
-│   │   ├── safety_briefing.py     # 安全交底
-│   │   ├── schedule.py            # 施工进度横道图
-│   │   ├── project.py             # 工程基础数据
-│   │   └── templates.py           # 模板管理
-│   ├── services/                  # 业务服务
-│   │   ├── data_service.py        # 数据组合（5 模块共享）
-│   │   ├── doc_generator.py       # Word/XLSX 生成器
-│   │   └── ...
-│   ├── templates/                 # Word/XLSX 模板（含 *_v2.docx）
-│   └── static/                    # 前端构建产物（自动服务）
-├── frontend/                      # Vue 3 前端
-│   ├── src/
-│   │   ├── views/                 # 页面（5 模块 + 数据基础）
-│   │   ├── api/                   # axios 接口封装
-│   │   ├── router/
-│   │   └── ...
-│   └── dist/                      # 构建产物（同步到 backend/static）
-├── competition/                   # 比赛材料
-│   └── product.html               # 创意产物 HTML 附件
-├── .devcontainer/                 # GitHub Codespaces 配置
-├── .gitignore
-├── LICENSE
-└── README.md
-```
-
----
-
-## 🛠️ 技术栈
+## 🏗️ 技术栈
 
 | 层级 | 选型 | 理由 |
 |---|---|---|
@@ -141,32 +85,32 @@ construction-document-system/
 
 ---
 
-## 🔌 核心 API
+## 🧪 演示数据说明
 
-| 端点 | 方法 | 用途 |
-|---|---|---|
-| `/api/projects` | GET | 工程列表 |
-| `/api/construction-design/generate` | POST | 生成施工组织设计 |
-| `/api/survey/generate` | POST | 生成项目勘察单 |
-| `/api/tech-briefing/generate` | POST | 生成技术交底 |
-| `/api/safety-briefing/generate` | POST | 生成安全交底 |
-| `/api/schedule-tasks/import-template` | POST | 从模板导入进度任务 |
-| `/api/schedule-tasks/generate` | POST | 生成横道图 xlsx |
-| `/api/projects/preview/{doc_id}` | GET | 文档预览 HTML |
+`demo/screenshots/` 中所有界面数据均为**虚构**，用于：
+- TRAE 比赛公开 Demo
+- GitHub 公开预览
 
-> 列表型接口统一返回 `{ items, total, page, page_size }`。
+工程名：某市科技园区 10kV 配电工程（示范工程）  
+人员：张明、李华、王芳、赵刚、刘伟 等 30 名虚构人员  
+所有公司名、地名、联系电话等均无真实信息。
 
 ---
 
-## 🧪 演示数据
+## 📂 仓库内容说明
 
-`seed.py` 会写入一份虚构的演示工程（"某市科技园区 10kV 配电工程"）+ 30 名虚构人员 + 12 条典型工艺 + 20 个进度任务。**所有数据均为虚构**，用于：
+```
+construction-document-system/    ← 本仓库（DEMO 公开版）
+├── README.md                    # 本文件
+├── LICENSE                      # MIT 协议
+├── .gitignore
+├── competition/                 # 比赛材料
+│   └── product.html             # 创意产物 HTML 附件
+└── demo/                        # 演示素材
+    └── screenshots/             # 8 张实际运行截图
+```
 
-- 本地快速体验
-- GitHub Codespaces 首次启动
-- TRAE 比赛公开 Demo
-
-如需使用自己的真实数据，只需不运行 `seed.py`，在前端界面手动录入即可。
+> 📌 **完整源码**（后端 / 前端 / 模板）暂未公开。如需评审，请联系作者获取。
 
 ---
 

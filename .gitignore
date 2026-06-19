@@ -1,74 +1,23 @@
-# ========== Python ==========
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-*.egg-info/
-.eggs/
-.pytest_cache/
-
-# ========== 虚拟环境 ==========
-venv/
-env/
-.venv/
-ENV/
-
-# ========== Node / Vue ==========
-node_modules/
-dist/.vite/
-.npm
-.eslintcache
-*.local
-
-# ========== IDE / 编辑器 ==========
-.idea/
-.vscode/
+# 系统无关文件
+.DS_Store
+Thumbs.db
 *.swp
 *.swo
 *~
-.DS_Store
-Thumbs.db
 
-# ========== 后端运行时产物 ==========
-backend/data/*.db
-backend/output/*
-!backend/output/.gitkeep
-backend/__pycache__/
-backend/*/__pycache__/
-backend/_scripts/
-backend/preview*.html
-backend/*.log
-backend/shots/
+# IDE
+.idea/
+.vscode/
+*.iml
 
-# ========== 前端构建（release 已含 dist，无需再次构建） ==========
-# 如需重新构建请启用此规则：
-# frontend/dist/
-
-# ========== 模板/文件锁 ==========
-backend/templates/~$*.docx
-backend/templates/~$*.xlsx
-
-# ========== 临时文件 ==========
+# 临时文件
 *.tmp
 *.bak
-*.bak.docx
-shot_*.png
-final_*.png
-test_*.png
-dump_*.mjs
-temp_*.mjs
-e2e_*.txt
 *.log
 
-# ========== 敏感信息保护 ==========
-.env
-.env.local
-*.secret
-*.key
-
-# ========== 数据备份 ==========
-*.db.bak
-*.db-journal
-*.db-wal
-*.db-shm
+# 构建产物（demo 仅含成品，无需源码）
+node_modules/
+dist/
+__pycache__/
+*.pyc
+*.pyo
